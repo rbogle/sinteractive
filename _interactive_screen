@@ -12,8 +12,11 @@ if [ "$DISPLAY" != "" ];then
     screen -S "$SCREENSESSION" -X unsetenv DISPLAY
     screen -S "$SCREENSESSION" -X setenv DISPLAY "$DISPLAY"
 fi
-
+# create new shell tab
 screen -S "$SCREENSESSION" -X screen
-screen -p1 -S "$SCREENSESSION" -X kill #META tab has outlived its usefulness
-screen -S "$SCREENSESSION" -p0 -X exec clear 
+#META tab has outlived its usefulness
+screen -p1 -S "$SCREENSESSION" -X kill
+# reset the shell tab
+screen -S "$SCREENSESSION" -p0 -X stuff 'clear ^M'
+# connect
 screen -S "$SCREENSESSION" -rd

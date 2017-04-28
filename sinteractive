@@ -113,7 +113,7 @@ declare -a SBATCH_ARGS
 
 SBATCH_ARGS=( --cpus-per-task="${REQCPU}" --mem="${REQMEM}" \
     --time="${REQTIME}" --partition="${PARTITION}"\
-    --output=/dev/null --error=/dev/null --export MYDIR )
+    --output=/dev/null --error=/dev/null --job-name="${USER}-interactive" --export MYDIR )
 
 if [[ $USE_QOS = "yes" ]]; then
     SBATCH_ARGS+=( --qos="${QOS}" )
