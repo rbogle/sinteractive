@@ -168,16 +168,18 @@ while : ; do
     echo -n "."
 done
 
-# Determine the first node in the job:
-NODE="$( srun --jobid="${JOB}" -N1 hostname )"
+INFO "Connecting to Node..."
 
+# Determine the first node in the job:
+# NODE="$( srun --jobid="${JOB}" -N1 hostname )"
+NODE="$( squeue -h -j "${JOB}" -o %N )"
 # SSH to the node and attach the screen
 
 sleep 1s
 
 # sacrific security for user experience
-ssh -X -o StrictHostKeyChecking=no -c arcfour -C \
-    -t "${NODE}" "${IS}" "slurm${JOB}"
+ssh -Y -o StrictHostKeyChecking=no -C \
+    -t "${NODE}.ib.astro.net" "${IS}" "slurm${JOB}"
 
 INFO "Wrapping up..."
 
