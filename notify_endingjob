@@ -12,7 +12,7 @@ if [ $? -ne 1 ]; then
   # Yep it is, so lets send mail
 
   subj="Your Interactive Job ${jobid} on ${jobnode}"
-  msg="Your Interactive Job ${jobid} on ${jnode} is finishing in 10 minutes
+  msg="Your Interactive Job ${jobid} on ${jobnode} is finishing in 10 minutes
 
   You can cancel this job with the command:
       # scancel ${jobid}
