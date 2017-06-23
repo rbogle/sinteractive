@@ -70,6 +70,31 @@ function READ_CONFIG()
     TIMEOUT="${TIMEOUT:=60}"
 }
 
+function sched_notify()
+{
+    jobid=$1
+    jnode=$2
+    jtime=$3
+    myname=$(whoami)
+    let when=${jtime}-10
+    # subj="Your Interactive Job ${jobid} on ${jnode}"
+    # msg="Your Interactive Job ${jobid} on ${jnode} is finishing in 10 minutes"
+    # msg+="\nYou can cancel this job with the command: scancel ${jobid}"
+    # msg+="\nOr you can ssh to ${jnode} and reattach to it with: screen -r"
+    # cmd="echo \"${msg}\" | mail -s \"${subj}\" ${myname}@usgs.gov"
+    cmd="${MYDIR}/notify_endingjob ${jobid} ${jnode} ${myname}"
+    echo "${cmd}" | at now +${when}min
+}
+
+function send_mail()
+{
+  jobid=$1
+  jnode=$2
+  myname=$(whoami)
+  msg="Your Interactive Job ${jobid} has launched on ${jnode}"
+  echo ${msg} | mail -s "${msg}" ${myname}@usgs.gov
+}
+
 export MYDIR="$( dirname "$( readlink -f "${BASH_SOURCE[0]}" )" )"
 
 # Batch Script that starts SCREEN
@@ -92,10 +117,10 @@ read -e -p "What partition? :: " -i "$DEFPART" PARTITION
 
 echo " "
 
-WARN "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-WARN "!! If you detach from the sinteractive  !!"
-WARN "!! screen session, it _WILL_ be killed. !!"
-WARN "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+#WARN "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+#WARN "!! If you detach from the sinteractive  !!"
+#WARN "!! screen session, it _WILL_ be killed. !!"
+#WARN "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 echo " "
 INFO "Spawning job with the following resources:"
 INFO "     Processors: ${REQCPU}"
@@ -131,10 +156,10 @@ fi
 
 # Make sure the job is always canceled
 # Relying on $PATH for scancel
-trap "{ echo 'Exit triggered. Cancelling job.' >&2 ; \
-    scancel --quiet "${JOB}"; exit ; }" EXIT
+#trap "{ echo 'Exit triggered. Cancelling job.' >&2 ; \
+#    scancel --quiet "${JOB}"; exit ; }" EXIT
 
-sleep 1
+#sleep 1
 
 # See if everything exploded immediately
 if scontrol show job "$JOB" 2>/dev/null | grep -q "JobState=FAILED"; then
@@ -168,6 +193,7 @@ while : ; do
     echo -n "."
 done
 
+
 INFO "Connecting to Node..."
 
 # Determine the first node in the job:
@@ -176,6 +202,8 @@ NODE="$( squeue -h -j "${JOB}" -o %N )"
 # SSH to the node and attach the screen
 
 sleep 1s
+send_mail ${JOB} ${NODE}
+sched_notify ${JOB} ${NODE} ${REQTIME}
 
 # sacrific security for user experience
 ssh -Y -o StrictHostKeyChecking=no -C \

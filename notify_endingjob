@@ -1,0 +1,27 @@
+#!/bin/bash
+
+jobid=$1
+jobnode=$2
+user=$3
+
+# check if this job is still running?
+scontrol show job ${jobid} 2>&1 | grep JobState > /dev/null
+
+if [ $? -ne 1 ]; then
+
+  # Yep it is, so lets send mail
+
+  subj="Your Interactive Job ${jobid} on ${jobnode}"
+  msg="Your Interactive Job ${jobid} on ${jnode} is finishing in 10 minutes
+
+  You can cancel this job with the command:
+      # scancel ${jobid}
+
+  Or you can ssh to ${jobnode} and reattach to it with:
+      # screen -r"
+
+  echo "${msg}" | mail -s "${subj}" ${user}@usgs.gov
+
+else
+  echo "Jobid ${jobid} is no longer running"
+fi
