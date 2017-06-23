@@ -70,6 +70,7 @@ function READ_CONFIG()
     TIMEOUT="${TIMEOUT:=60}"
 }
 
+# This will schedule a notification 10 min before exit
 function sched_notify()
 {
     jobid=$1
@@ -77,15 +78,13 @@ function sched_notify()
     jtime=$3
     myname=$(whoami)
     let when=${jtime}-10
-    # subj="Your Interactive Job ${jobid} on ${jnode}"
-    # msg="Your Interactive Job ${jobid} on ${jnode} is finishing in 10 minutes"
-    # msg+="\nYou can cancel this job with the command: scancel ${jobid}"
-    # msg+="\nOr you can ssh to ${jnode} and reattach to it with: screen -r"
-    # cmd="echo \"${msg}\" | mail -s \"${subj}\" ${myname}@usgs.gov"
-    cmd="${MYDIR}/notify_endingjob ${jobid} ${jnode} ${myname}"
-    echo "${cmd}" | at now +${when}min
+    if [ $when -gt 20 ]; then
+    	cmd="${MYDIR}/notify_endingjob ${jobid} ${jnode} ${myname}"
+    	echo "${cmd}" | at now +${when}min
+    fi
 }
 
+# This will send an email to notify user where job is running"
 function send_mail()
 {
   jobid=$1
