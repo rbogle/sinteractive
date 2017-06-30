@@ -137,7 +137,7 @@ while getopts ":n:m:t:p:shd" opt; do
            p) PARTITION=$OPTARG; PROMPT=false;;
            q) QOS=$OPTARG; PROMPT=false;;
            h) showhelp; exit 1;;
-          \?) showhelp; exit 1;;
+           \?) showhelp; exit 1;;
         esac
 done
 shift $((OPTIND-1))
@@ -190,7 +190,6 @@ fi
 echo " "
 
 INFO "Submitting job..."
-INFO "sbatch ${SBATCH_ARGS[@]} $@ ${BS}"
 
 if ! JOB="$( sbatch "${SBATCH_ARGS[@]}" "$@" "${BS}" \
     |& egrep -o -e "\b[0-9]+$" )"; then
