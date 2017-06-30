@@ -14,14 +14,13 @@ if [ $? -ne 1 ]; then
   subj="Your Interactive Job ${jobid} on ${jobnode}"
   msg="Your Interactive Job ${jobid} on ${jobnode} is finishing in 10 minutes
 
-  You can cancel this job with the command:
-      # scancel ${jobid}
+  You can extend the time for this job:
+      # scontrol update job ${jobid} timelimit=<HH:MM:SS>
 
-  Or you can ssh to ${jobnode} and reattach to it with:
+  And you can reconnect to this job by
+      # ssh ${jobnode}
       # screen -r"
 
   echo "${msg}" | mail -s "${subj}" ${user}@usgs.gov
 
-else
-  echo "Jobid ${jobid} is no longer running"
 fi

@@ -94,6 +94,23 @@ function send_mail()
   echo ${msg} | mail -s "${msg}" ${myname}@usgs.gov
 }
 
+# display help for script
+function showhelp(){
+	echo -e "\n sinterative starts an interactive job on the cluster:\n"
+  echo -e "\tOptions:"
+  echo -e "\t---------------"
+  echo -e "\t -s\tsilent mode\tprevents notification emails"
+  echo -e "\t -d\tuse defaults\tsee below:"
+  echo -e "\t -n\tnumber of cpus\tdefault: ${DEFCPU}"
+  echo -e "\t -m\tmemory in MB\tdefault: ${DEFMEM}MB"
+  echo -e "\t -t\ttime in sec\tdefault: ${DEFTIME}sec"
+  echo -e "\t -p\tpartition\tdefault: ${DEFPART}\n"
+  if [[ $USE_QOS = "yes" ]]; then
+    echo -e "\t -q\tqos\tdefault: ${DEFQOS}\n"
+  fi
+}
+
+
 export MYDIR="$( dirname "$( readlink -f "${BASH_SOURCE[0]}" )" )"
 
 # Batch Script that starts SCREEN
@@ -102,19 +119,46 @@ BS="${MYDIR}/_interactive"
 IS="${MYDIR}/_interactive_screen"
 READ_CONFIG
 
-INFO ">Please enter your resource requirements.<"
-echo " "
-read -e -p "How many CPU cores? :: " -i "$DEFCPU" REQCPU
-read -e -p "How much memory (in MB)? :: " -i "$DEFMEM" REQMEM
-read -e -p "How many minutes do you need? :: " -i "$DEFTIME" REQTIME
+SILENT=false
+PROMPT=true
+REQCPU=$DEFCPU
+REQMEM=$DEFMEM
+REQTIME=$DEFTIME
+PARTITION=$DEFPART
+QOS=$DEFQOS
 
-if [[ $USE_QOS = "yes" ]]; then
-    read -e -p "What QOS? :: " -i "$DEFQOS" QOS
+while getopts ":n:m:t:p:shd" opt; do
+        case $opt in
+           s) SILENT=true;;
+           d) PROMPT=false; break;;
+           n) REQCPU=$OPTARG; PROMPT=false;;
+           m) REQMEM=$OPTARG; PROMPT=false;;
+           t) REQTIME=$OPTARG; PROMPT=false;;
+           p) PARTITION=$OPTARG; PROMPT=false;;
+           q) QOS=$OPTARG; PROMPT=false;;
+           h) showhelp; exit 1;;
+          \?) showhelp; exit 1;;
+        esac
+done
+shift $((OPTIND-1))
+
+if [ "$PROMPT" = true ]; then
+
+	INFO ">Please enter your resource requirements.<"
+	echo " "
+	read -e -p "How many CPU cores? :: " -i "$DEFCPU" REQCPU
+	read -e -p "How much memory (in MB)? :: " -i "$DEFMEM" REQMEM
+	read -e -p "How many minutes do you need? :: " -i "$DEFTIME" REQTIME
+
+	if [[ $USE_QOS = "yes" ]]; then
+    		read -e -p "What QOS? :: " -i "$DEFQOS" QOS
+	fi
+
+	read -e -p "What partition? :: " -i "$DEFPART" PARTITION
+
+	echo " "
+
 fi
-
-read -e -p "What partition? :: " -i "$DEFPART" PARTITION
-
-echo " "
 
 #WARN "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 #WARN "!! If you detach from the sinteractive  !!"
@@ -146,6 +190,8 @@ fi
 echo " "
 
 INFO "Submitting job..."
+INFO "sbatch ${SBATCH_ARGS[@]} $@ ${BS}"
+
 if ! JOB="$( sbatch "${SBATCH_ARGS[@]}" "$@" "${BS}" \
     |& egrep -o -e "\b[0-9]+$" )"; then
 
@@ -201,8 +247,12 @@ NODE="$( squeue -h -j "${JOB}" -o %N )"
 # SSH to the node and attach the screen
 
 sleep 1s
-send_mail ${JOB} ${NODE}
-sched_notify ${JOB} ${NODE} ${REQTIME}
+
+# notify user for start and end by mail
+if [ $SILENT = false ]; then
+	send_mail ${JOB} ${NODE}
+	sched_notify ${JOB} ${NODE} ${REQTIME}
+fi
 
 # sacrific security for user experience
 ssh -Y -o StrictHostKeyChecking=no -C \
