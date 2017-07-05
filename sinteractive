@@ -105,7 +105,7 @@ function showhelp(){
   echo -e "\t -m\tmemory in MB\tdefault: ${DEFMEM}MB"
   echo -e "\t -t\ttime in minutes\tdefault: ${DEFTIME}min"
   echo -e "\t -p\tpartition\tdefault: ${DEFPART}"
-  echo -e "\t -N\trequest node\tdefault: slurm's choice"
+  echo -e "\t -w\trequest node\tdefault: slurm's choice"
   if [[ $USE_QOS = "yes" ]]; then
     echo -e "\t -q\tqos\tdefault: ${DEFQOS}"
   fi
