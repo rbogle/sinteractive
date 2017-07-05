@@ -103,11 +103,13 @@ function showhelp(){
   echo -e "\t -d\tuse defaults\tsee below:"
   echo -e "\t -n\tnumber of cpus\tdefault: ${DEFCPU}"
   echo -e "\t -m\tmemory in MB\tdefault: ${DEFMEM}MB"
-  echo -e "\t -t\ttime in sec\tdefault: ${DEFTIME}sec"
-  echo -e "\t -p\tpartition\tdefault: ${DEFPART}\n"
+  echo -e "\t -t\ttime in minutes\tdefault: ${DEFTIME}min"
+  echo -e "\t -p\tpartition\tdefault: ${DEFPART}"
+  echo -e "\t -N\trequest node\tdefault: slurm's choice"
   if [[ $USE_QOS = "yes" ]]; then
-    echo -e "\t -q\tqos\tdefault: ${DEFQOS}\n"
+    echo -e "\t -q\tqos\tdefault: ${DEFQOS}"
   fi
+  echo ""
 }
 
 
@@ -125,16 +127,18 @@ REQCPU=$DEFCPU
 REQMEM=$DEFMEM
 REQTIME=$DEFTIME
 PARTITION=$DEFPART
+NODE=""
 QOS=$DEFQOS
 
-while getopts ":n:m:t:p:shd" opt; do
+while getopts ":n:m:t:p:w:shd" opt; do
         case $opt in
            s) SILENT=true;;
-           d) PROMPT=false; break;;
+           d) PROMPT=false;;
            n) REQCPU=$OPTARG; PROMPT=false;;
            m) REQMEM=$OPTARG; PROMPT=false;;
            t) REQTIME=$OPTARG; PROMPT=false;;
            p) PARTITION=$OPTARG; PROMPT=false;;
+           w) NODE=$OPTARG; PROMPT=false;;
            q) QOS=$OPTARG; PROMPT=false;;
            h) showhelp; exit 1;;
            \?) showhelp; exit 1;;
@@ -183,6 +187,10 @@ SBATCH_ARGS=( --cpus-per-task="${REQCPU}" --mem="${REQMEM}" \
     --time="${REQTIME}" --partition="${PARTITION}"\
     --output=/dev/null --error=/dev/null --job-name="${USER}-interactive" --export MYDIR )
 
+if [[ $NODE != "" ]]; then
+  SBATCH_ARGS+=( --nodelist="${NODE}" )
+fi
+
 if [[ $USE_QOS = "yes" ]]; then
     SBATCH_ARGS+=( --qos="${QOS}" )
 fi
@@ -190,8 +198,9 @@ fi
 echo " "
 
 INFO "Submitting job..."
+# used to be sbatch "${SBATCH_ARGS[@]}" "$@" "${BS}"
 
-if ! JOB="$( sbatch "${SBATCH_ARGS[@]}" "$@" "${BS}" \
+if ! JOB="$( sbatch "${SBATCH_ARGS[@]}" "${BS}" \
     |& egrep -o -e "\b[0-9]+$" )"; then
 
     ERROR "Failed to create job. Please double-check all settings are valid."
@@ -229,6 +238,7 @@ while : ; do
         INFO "Waiting for job start timed out."
         INFO "This is probably just a sign the cluster is real busy."
         INFO "Please try again later."
+        scancel ${JOB}
         exit 1
     fi
 
